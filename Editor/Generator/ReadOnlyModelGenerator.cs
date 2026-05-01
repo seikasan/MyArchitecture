@@ -16,13 +16,13 @@ namespace MyArchitecture.Editor
         private const string ReactivePropertyFullName = "R3.ReactiveProperty`1";
 
         private const string ApplicationOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Application/ReadOnlyModels.g.cs";
+            "Assets/Generated/MyArchitecture/ReadOnlyModels.g.cs";
 
         private const string PackageOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Package/ReadOnlyPackageModels.g.cs";
+            "Packages/com.seikasan.myarchitecture/Runtime/Generated/Package/ReadOnlyPackageModels.g.cs";
 
         private const string FrameworkRootPath =
-            "Assets/Scripts/MyArchitecture/";
+            "Packages/com.seikasan.myarchitecture/";
 
         static ReadOnlyModelGenerator()
         {

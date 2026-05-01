@@ -67,7 +67,7 @@ namespace MyArchitecture.Integration
             InstallFeatures(context);
 
             ArchitecturePackageAutoRegistration.Register(context);
-            ArchitectureAutoRegistration.Register(context);
+            RegisterProjectAutoRegistration(context);
 
             RegisterArchitectureInitializer(builder);
 
@@ -140,6 +140,11 @@ namespace MyArchitecture.Integration
 
         protected virtual void OnConfigured(
             ArchitectureRegistrationContext context)
+        {
+        }
+
+        protected virtual void RegisterProjectAutoRegistration(
+        ArchitectureRegistrationContext context)
         {
         }
 

@@ -1,7 +1,13 @@
 {
   "name": "MyArchitecture.Runtime",
   "rootNamespace": "MyArchitecture",
-  "references": [],
+  "references": [
+    "UniTask",
+    "VContainer",
+    "MessagePipe",
+    "MessagePipe.VContainer",
+    "PrimeTween.Runtime"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
