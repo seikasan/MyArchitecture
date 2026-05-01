@@ -177,7 +177,7 @@ Prefab 生成、Scene 配置 View、破棄、Pool、Keep などの扱いも Enti
 
 ## Feature.ADV
 
-Reature.ADV は、ADV / ノベルゲーム向けのシナリオ再生機能です。
+Feature.ADV は、ADV / ノベルゲーム向けのシナリオ再生機能です。
 
 runtime は Unity UI や特定のファイル形式に固定せず、`AdvScenario` と `IAdvInstruction` を中心に動きます。
 
@@ -199,7 +199,7 @@ UI は View interface で差し替える前提です。
 
 ## Feature.Rhythm
 
-Reature.Rhythm は、レーン型リズムゲーム向けの runtime 機能です。
+Feature.Rhythm は、レーン型リズムゲーム向けの runtime 機能です。
 
 譜面エディタや完成済み UI は含まず、次のような中核処理を担当します。
 
