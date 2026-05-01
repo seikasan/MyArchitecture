@@ -13,14 +13,14 @@ namespace MyArchitecture.Editor
     internal static class ArchitectureGeneratedSourceRecovery
     {
         private const string ApplicationReadOnlyOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Application/ReadOnlyModels.g.cs";
+            "Assets/Generated/MyArchitecture/ReadOnlyModels.g.cs";
         private const string PackageReadOnlyOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Package/ReadOnlyPackageModels.g.cs";
+            "Packages/com.seikasan.myarchitecture/Runtime/Generated/Package/ReadOnlyPackageModels.g.cs";
         private const string ApplicationRegistrationOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Application/ArchitectureAutoRegistration.g.cs";
+            "Assets/Generated/MyArchitecture/ArchitectureAutoRegistration.g.cs";
         private const string PackageRegistrationOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Package/ArchitecturePackageAutoRegistration.g.cs";
-        private const string FrameworkRootPath = "Assets/Scripts/MyArchitecture/";
+            "Packages/com.seikasan.myarchitecture/Runtime/Generated/Package/ArchitecturePackageAutoRegistration.g.cs";
+        private const string FrameworkRootPath = "Packages/com.seikasan.myarchitecture/";
 
         private static bool _isGenerating;
 
@@ -380,47 +380,59 @@ namespace MyArchitecture.Editor
 
             var result = new List<SourceType>();
 
-            foreach (var path in Directory.GetFiles("Assets", "*.cs", SearchOption.AllDirectories))
+            foreach (var root in new[]
+                {
+                    "Assets",
+                    "Packages/com.seikasan.myarchitecture"
+                })
             {
-                var normalizedPath = NormalizePath(path);
-
-                if (!IsRuntimeSourcePath(normalizedPath))
+                if (!Directory.Exists(root))
                 {
                     continue;
                 }
 
-                var source = RemoveComments(File.ReadAllText(normalizedPath));
-                var fileScopedNamespace = GetFileScopedNamespace(source);
-                var usingDirectives = GetUsingDirectives(source);
-                var typeRanges = new List<SourceRange>();
-
-                foreach (Match match in TypeRegex.Matches(source))
+                foreach (var path in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
                 {
-                    if (typeRanges.Any(range => range.Contains(match.Index)))
+                    var normalizedPath = NormalizePath(path);
+
+                    if (!IsRuntimeSourcePath(normalizedPath))
                     {
                         continue;
                     }
 
-                    var openBrace = source.IndexOf('{', match.Index + match.Length - 1);
-                    var closeBrace = openBrace >= 0 ? FindMatchingBrace(source, openBrace) : -1;
+                    var source = RemoveComments(File.ReadAllText(normalizedPath));
+                    var fileScopedNamespace = GetFileScopedNamespace(source);
+                    var usingDirectives = GetUsingDirectives(source);
+                    var typeRanges = new List<SourceRange>();
 
-                    if (closeBrace < 0)
+                    foreach (Match match in TypeRegex.Matches(source))
                     {
-                        continue;
+                        if (typeRanges.Any(range => range.Contains(match.Index)))
+                        {
+                            continue;
+                        }
+
+                        var openBrace = source.IndexOf('{', match.Index + match.Length - 1);
+                        var closeBrace = openBrace >= 0 ? FindMatchingBrace(source, openBrace) : -1;
+
+                        if (closeBrace < 0)
+                        {
+                            continue;
+                        }
+
+                        typeRanges.Add(new SourceRange(openBrace, closeBrace));
+
+                        result.Add(new SourceType(
+                            normalizedPath,
+                            GetNamespaceAt(source, match.Index, fileScopedNamespace),
+                            match.Groups["access"].Value,
+                            match.Groups["modifiers"].Value,
+                            match.Groups["kind"].Value,
+                            match.Groups["name"].Value,
+                            NormalizeWhitespace(match.Groups["bases"].Value),
+                            source.Substring(openBrace + 1, closeBrace - openBrace - 1),
+                            usingDirectives));
                     }
-
-                    typeRanges.Add(new SourceRange(openBrace, closeBrace));
-
-                    result.Add(new SourceType(
-                        normalizedPath,
-                        GetNamespaceAt(source, match.Index, fileScopedNamespace),
-                        match.Groups["access"].Value,
-                        match.Groups["modifiers"].Value,
-                        match.Groups["kind"].Value,
-                        match.Groups["name"].Value,
-                        NormalizeWhitespace(match.Groups["bases"].Value),
-                        source.Substring(openBrace + 1, closeBrace - openBrace - 1),
-                        usingDirectives));
                 }
             }
 
@@ -437,10 +449,27 @@ namespace MyArchitecture.Editor
             var normalized = NormalizePath(path);
 
             return normalized.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) &&
-                   normalized.StartsWith("Assets/", StringComparison.Ordinal) &&
-                   !normalized.Contains("/Editor/") &&
-                   !normalized.Contains("/Generated/") &&
-                   !normalized.Contains("/Tests/");
+               (normalized.StartsWith("Assets/", StringComparison.Ordinal) ||
+                normalized.StartsWith("Packages/com.seikasan.myarchitecture/", StringComparison.Ordinal)) &&
+               !ContainsIgnoredFolder(normalized) &&
+               !normalized.Contains("/Editor/") &&
+               !normalized.Contains("/Generated/") &&
+               !normalized.Contains("/Tests/");
+        }
+
+        private static bool ContainsIgnoredFolder(string path)
+        {
+            var parts = path.Split('/');
+
+            foreach (var part in parts)
+            {
+                if (part.EndsWith("~", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static IReadOnlyList<string> SplitTopLevelCommaSeparated(string text)

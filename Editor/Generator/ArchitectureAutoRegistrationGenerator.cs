@@ -12,13 +12,13 @@ namespace MyArchitecture.Editor
     internal static class ArchitectureAutoRegistrationGenerator
     {
         private const string ApplicationOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Application/ArchitectureAutoRegistration.g.cs";
+            "Assets/Generated/MyArchitecture/ArchitectureAutoRegistration.g.cs";
 
         private const string PackageOutputPath =
-            "Assets/Scripts/MyArchitecture/Generated/Package/ArchitecturePackageAutoRegistration.g.cs";
+            "Packages/com.seikasan.myarchitecture/Runtime/Generated/Package/ArchitecturePackageAutoRegistration.g.cs";
 
         private const string FrameworkRootPath =
-            "Assets/Scripts/MyArchitecture/";
+            "Packages/com.seikasan.myarchitecture/";
 
         private static readonly Type[] CommandInterfaceTypes =
         {
@@ -247,7 +247,8 @@ namespace MyArchitecture.Editor
 
             var normalized = path.Replace('\\', '/');
 
-            return normalized.StartsWith("Assets/", StringComparison.Ordinal) &&
+            return (normalized.StartsWith("Assets/", StringComparison.Ordinal) ||
+                    normalized.StartsWith(FrameworkRootPath, StringComparison.Ordinal)) &&
                    !normalized.Contains("/Editor/");
         }
 
