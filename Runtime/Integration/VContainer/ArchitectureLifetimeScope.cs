@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using MessagePipe;
 using MyArchitecture.Core;
 using MyArchitecture.Unity;
@@ -67,6 +69,7 @@ namespace MyArchitecture.Integration
             InstallFeatures(context);
 
             ArchitecturePackageAutoRegistration.Register(context);
+            RegisterGeneratedProjectAutoRegistration(context);
             RegisterProjectAutoRegistration(context);
 
             RegisterArchitectureInitializer(builder);
@@ -144,8 +147,57 @@ namespace MyArchitecture.Integration
         }
 
         protected virtual void RegisterProjectAutoRegistration(
-        ArchitectureRegistrationContext context)
+            ArchitectureRegistrationContext context)
         {
+        }
+
+        private static void RegisterGeneratedProjectAutoRegistration(
+            ArchitectureRegistrationContext context)
+        {
+            const string typeName =
+                "MyArchitecture.Integration.ArchitectureAutoRegistration";
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(typeName);
+
+                if (type == null)
+                {
+                    continue;
+                }
+
+                var method = type.GetMethod(
+                    "Register",
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.Static);
+
+                if (method == null)
+                {
+                    continue;
+                }
+
+                var parameters = method.GetParameters();
+
+                if (parameters.Length != 1 ||
+                    parameters[0].ParameterType != typeof(ArchitectureRegistrationContext))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    method.Invoke(null, new object[] { context });
+                }
+                catch (TargetInvocationException exception)
+                {
+                    throw new InvalidOperationException(
+                    "Generated project auto registration failed.",
+                    exception.InnerException ?? exception);
+                }
+
+                return;
+            }
         }
 
         private MessagePipeOptions RegisterArchitectureCore(
