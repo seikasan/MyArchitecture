@@ -22,27 +22,6 @@ namespace MyArchitecture.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SendCommand<TCommand, TArg1, TArg2>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2)
-            where TCommand : ICommand<TArg1, TArg2>
-        {
-            source.CommandRunner.Send<TCommand, TArg1, TArg2>(arg1, arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SendCommand<TCommand, TArg1, TArg2, TArg3>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3)
-            where TCommand : ICommand<TArg1, TArg2, TArg3>
-        {
-            source.CommandRunner.Send<TCommand, TArg1, TArg2, TArg3>(arg1, arg2, arg3);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UniTask SendCommandAsync<TCommand>(
             this ICanSendCommand source)
             where TCommand : IAsyncCommand
@@ -63,34 +42,6 @@ namespace MyArchitecture.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniTask SendCommandAsync<TCommand, TArg1, TArg2>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2)
-            where TCommand : IAsyncCommand<TArg1, TArg2>
-        {
-            return source.CommandRunner.SendAsync<TCommand, TArg1, TArg2>(
-                arg1,
-                arg2,
-                source.DisposeCancellationToken);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniTask SendCommandAsync<TCommand, TArg1, TArg2, TArg3>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3)
-            where TCommand : IAsyncCommand<TArg1, TArg2, TArg3>
-        {
-            return source.CommandRunner.SendAsync<TCommand, TArg1, TArg2, TArg3>(
-                arg1,
-                arg2,
-                arg3,
-                source.DisposeCancellationToken);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TrySendCommand<TCommand>(
             this ICanSendCommand source)
             where TCommand : ITryCommand
@@ -105,27 +56,6 @@ namespace MyArchitecture.Core
             where TCommand : ITryCommand<TArg>
         {
             return source.CommandRunner.TrySend<TCommand, TArg>(arg);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TrySendCommand<TCommand, TArg1, TArg2>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2)
-            where TCommand : ITryCommand<TArg1, TArg2>
-        {
-            return source.CommandRunner.TrySend<TCommand, TArg1, TArg2>(arg1, arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TrySendCommand<TCommand, TArg1, TArg2, TArg3>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3)
-            where TCommand : ITryCommand<TArg1, TArg2, TArg3>
-        {
-            return source.CommandRunner.TrySend<TCommand, TArg1, TArg2, TArg3>(arg1, arg2, arg3);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -149,34 +79,6 @@ namespace MyArchitecture.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniTask<bool> TrySendCommandAsync<TCommand, TArg1, TArg2>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2)
-            where TCommand : IAsyncTryCommand<TArg1, TArg2>
-        {
-            return source.CommandRunner.TrySendAsync<TCommand, TArg1, TArg2>(
-                arg1,
-                arg2,
-                source.DisposeCancellationToken);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniTask<bool> TrySendCommandAsync<TCommand, TArg1, TArg2, TArg3>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3)
-            where TCommand : IAsyncTryCommand<TArg1, TArg2, TArg3>
-        {
-            return source.CommandRunner.TrySendAsync<TCommand, TArg1, TArg2, TArg3>(
-                arg1,
-                arg2,
-                arg3,
-                source.DisposeCancellationToken);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TResult SendResultCommand<TCommand, TResult>(
             this ICanSendCommand source)
             where TCommand : IResultCommand<TResult>
@@ -193,34 +95,6 @@ namespace MyArchitecture.Core
             where TResult : ICommandResult
         {
             return source.CommandRunner.SendResult<TCommand, TArg, TResult>(arg);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TResult SendResultCommand<TCommand, TArg1, TArg2, TResult>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2)
-            where TCommand : IResultCommand<TArg1, TArg2, TResult>
-            where TResult : ICommandResult
-        {
-            return source.CommandRunner.SendResult<TCommand, TArg1, TArg2, TResult>(
-                arg1,
-                arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TResult SendResultCommand<TCommand, TArg1, TArg2, TArg3, TResult>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3)
-            where TCommand : IResultCommand<TArg1, TArg2, TArg3, TResult>
-            where TResult : ICommandResult
-        {
-            return source.CommandRunner.SendResult<TCommand, TArg1, TArg2, TArg3, TResult>(
-                arg1,
-                arg2,
-                arg3);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -242,36 +116,6 @@ namespace MyArchitecture.Core
         {
             return source.CommandRunner.SendResultAsync<TCommand, TArg, TResult>(
                 arg,
-                source.DisposeCancellationToken);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniTask<TResult> SendResultCommandAsync<TCommand, TArg1, TArg2, TResult>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2)
-            where TCommand : IAsyncResultCommand<TArg1, TArg2, TResult>
-            where TResult : ICommandResult
-        {
-            return source.CommandRunner.SendResultAsync<TCommand, TArg1, TArg2, TResult>(
-                arg1,
-                arg2,
-                source.DisposeCancellationToken);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniTask<TResult> SendResultCommandAsync<TCommand, TArg1, TArg2, TArg3, TResult>(
-            this ICanSendCommand source,
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3)
-            where TCommand : IAsyncResultCommand<TArg1, TArg2, TArg3, TResult>
-            where TResult : ICommandResult
-        {
-            return source.CommandRunner.SendResultAsync<TCommand, TArg1, TArg2, TArg3, TResult>(
-                arg1,
-                arg2,
-                arg3,
                 source.DisposeCancellationToken);
         }
     }

@@ -43,22 +43,6 @@ namespace MyArchitecture.Core
             return Get<TQuery>().Execute(arg);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TResult Send<TQuery, TArg1, TArg2, TResult>(TArg1 arg1, TArg2 arg2)
-            where TQuery : IQuery<TArg1, TArg2, TResult>
-        {
-            Log<TQuery, TResult>("Query");
-            return Get<TQuery>().Execute(arg1, arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TResult Send<TQuery, TArg1, TArg2, TArg3, TResult>(TArg1 arg1, TArg2 arg2, TArg3 arg3)
-            where TQuery : IQuery<TArg1, TArg2, TArg3, TResult>
-        {
-            Log<TQuery, TResult>("Query");
-            return Get<TQuery>().Execute(arg1, arg2, arg3);
-        }
-
         public UniTask<TResult> SendAsync<TQuery, TResult>(
             CancellationToken cancellationToken = default)
             where TQuery : IAsyncQuery<TResult>
@@ -76,29 +60,6 @@ namespace MyArchitecture.Core
             cancellationToken.ThrowIfCancellationRequested();
             Log<TQuery, TResult>("Async Query");
             return Get<TQuery>().ExecuteAsync(arg, cancellationToken);
-        }
-
-        public UniTask<TResult> SendAsync<TQuery, TArg1, TArg2, TResult>(
-            TArg1 arg1,
-            TArg2 arg2,
-            CancellationToken cancellationToken = default)
-            where TQuery : IAsyncQuery<TArg1, TArg2, TResult>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TQuery, TResult>("Async Query");
-            return Get<TQuery>().ExecuteAsync(arg1, arg2, cancellationToken);
-        }
-
-        public UniTask<TResult> SendAsync<TQuery, TArg1, TArg2, TArg3, TResult>(
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3,
-            CancellationToken cancellationToken = default)
-            where TQuery : IAsyncQuery<TArg1, TArg2, TArg3, TResult>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TQuery, TResult>("Async Query");
-            return Get<TQuery>().ExecuteAsync(arg1, arg2, arg3, cancellationToken);
         }
 
         private TQuery Get<TQuery>()

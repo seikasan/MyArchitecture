@@ -24,40 +24,24 @@ namespace MyArchitecture.Editor
         {
             typeof(ICommand),
             typeof(ICommand<>),
-            typeof(ICommand<,>),
-            typeof(ICommand<,,>),
             typeof(IAsyncCommand),
             typeof(IAsyncCommand<>),
-            typeof(IAsyncCommand<,>),
-            typeof(IAsyncCommand<,,>),
             typeof(ITryCommand),
             typeof(ITryCommand<>),
-            typeof(ITryCommand<,>),
-            typeof(ITryCommand<,,>),
             typeof(IAsyncTryCommand),
             typeof(IAsyncTryCommand<>),
-            typeof(IAsyncTryCommand<,>),
-            typeof(IAsyncTryCommand<,,>),
             typeof(IResultCommand<>),
             typeof(IResultCommand<,>),
-            typeof(IResultCommand<,,>),
-            typeof(IResultCommand<,,,>),
             typeof(IAsyncResultCommand<>),
-            typeof(IAsyncResultCommand<,>),
-            typeof(IAsyncResultCommand<,,>),
-            typeof(IAsyncResultCommand<,,,>)
+            typeof(IAsyncResultCommand<,>)
         };
 
         private static readonly Type[] QueryInterfaceTypes =
         {
             typeof(IQuery<>),
             typeof(IQuery<,>),
-            typeof(IQuery<,,>),
-            typeof(IQuery<,,,>),
             typeof(IAsyncQuery<>),
-            typeof(IAsyncQuery<,>),
-            typeof(IAsyncQuery<,,>),
-            typeof(IAsyncQuery<,,,>)
+            typeof(IAsyncQuery<,>)
         };
 
         static ArchitectureAutoRegistrationGenerator()

@@ -43,22 +43,6 @@ namespace MyArchitecture.Core
             Get<TCommand>().Execute(arg);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Send<TCommand, TArg1, TArg2>(TArg1 arg1, TArg2 arg2)
-            where TCommand : ICommand<TArg1, TArg2>
-        {
-            Log<TCommand>("Command");
-            Get<TCommand>().Execute(arg1, arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Send<TCommand, TArg1, TArg2, TArg3>(TArg1 arg1, TArg2 arg2, TArg3 arg3)
-            where TCommand : ICommand<TArg1, TArg2,  TArg3>
-        {
-            Log<TCommand>("Command");
-            Get<TCommand>().Execute(arg1, arg2, arg3);
-        }
-
         public UniTask SendAsync<TCommand>(
             CancellationToken cancellationToken = default)
             where TCommand : IAsyncCommand
@@ -78,29 +62,6 @@ namespace MyArchitecture.Core
             return Get<TCommand>().ExecuteAsync(arg, cancellationToken);
         }
 
-        public UniTask SendAsync<TCommand, TArg1, TArg2>(
-            TArg1 arg1,
-            TArg2 arg2,
-            CancellationToken cancellationToken = default)
-            where TCommand : IAsyncCommand<TArg1, TArg2>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TCommand>("Async Command");
-            return Get<TCommand>().ExecuteAsync(arg1, arg2, cancellationToken);
-        }
-
-        public UniTask SendAsync<TCommand, TArg1, TArg2, TArg3>(
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3,
-            CancellationToken cancellationToken = default)
-            where TCommand : IAsyncCommand<TArg1, TArg2, TArg3>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TCommand>("Async Command");
-            return Get<TCommand>().ExecuteAsync(arg1, arg2, arg3, cancellationToken);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TrySend<TCommand>()
             where TCommand : ITryCommand
@@ -115,22 +76,6 @@ namespace MyArchitecture.Core
         {
             Log<TCommand>("TryCommand");
             return Get<TCommand>().TryExecute(arg);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TrySend<TCommand, TArg1, TArg2>(TArg1 arg1, TArg2 arg2)
-            where TCommand : ITryCommand<TArg1, TArg2>
-        {
-            Log<TCommand>("TryCommand");
-            return Get<TCommand>().TryExecute(arg1, arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TrySend<TCommand, TArg1, TArg2, TArg3>(TArg1 arg1, TArg2 arg2, TArg3 arg3)
-            where TCommand : ITryCommand<TArg1, TArg2, TArg3>
-        {
-            Log<TCommand>("TryCommand");
-            return Get<TCommand>().TryExecute(arg1, arg2, arg3);
         }
 
         public UniTask<bool> TrySendAsync<TCommand>(
@@ -152,29 +97,6 @@ namespace MyArchitecture.Core
             return Get<TCommand>().TryExecuteAsync(arg, cancellationToken);
         }
 
-        public UniTask<bool> TrySendAsync<TCommand, TArg1, TArg2>(
-            TArg1 arg1,
-            TArg2 arg2,
-            CancellationToken cancellationToken = default)
-            where TCommand : IAsyncTryCommand<TArg1, TArg2>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TCommand>("Async TryCommand");
-            return Get<TCommand>().TryExecuteAsync(arg1, arg2, cancellationToken);
-        }
-
-        public UniTask<bool> TrySendAsync<TCommand, TArg1, TArg2, TArg3>(
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3,
-            CancellationToken cancellationToken = default)
-            where TCommand : IAsyncTryCommand<TArg1, TArg2, TArg3>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TCommand>("Async TryCommand");
-            return Get<TCommand>().TryExecuteAsync(arg1, arg2, arg3, cancellationToken);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TResult SendResult<TCommand, TResult>()
             where TCommand : IResultCommand<TResult>
@@ -191,24 +113,6 @@ namespace MyArchitecture.Core
         {
             Log<TCommand>("ResultCommand");
             return Get<TCommand>().Execute(arg);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TResult SendResult<TCommand, TArg1, TArg2, TResult>(TArg1 arg1, TArg2 arg2)
-            where TCommand : IResultCommand<TArg1, TArg2, TResult>
-            where TResult : ICommandResult
-        {
-            Log<TCommand>("ResultCommand");
-            return Get<TCommand>().Execute(arg1, arg2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TResult SendResult<TCommand, TArg1, TArg2, TArg3, TResult>(TArg1 arg1, TArg2 arg2, TArg3 arg3)
-            where TCommand : IResultCommand<TArg1, TArg2, TArg3, TResult>
-            where TResult : ICommandResult
-        {
-            Log<TCommand>("ResultCommand");
-            return Get<TCommand>().Execute(arg1, arg2, arg3);
         }
 
         public UniTask<TResult> SendResultAsync<TCommand, TResult>(
@@ -230,31 +134,6 @@ namespace MyArchitecture.Core
             cancellationToken.ThrowIfCancellationRequested();
             Log<TCommand>("Async ResultCommand");
             return Get<TCommand>().ExecuteAsync(arg, cancellationToken);
-        }
-
-        public UniTask<TResult> SendResultAsync<TCommand, TArg1, TArg2, TResult>(
-            TArg1 arg1,
-            TArg2 arg2,
-            CancellationToken cancellationToken = default)
-            where TCommand : IAsyncResultCommand<TArg1, TArg2, TResult>
-            where TResult : ICommandResult
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TCommand>("Async ResultCommand");
-            return Get<TCommand>().ExecuteAsync(arg1, arg2, cancellationToken);
-        }
-
-        public UniTask<TResult> SendResultAsync<TCommand, TArg1, TArg2, TArg3, TResult>(
-            TArg1 arg1,
-            TArg2 arg2,
-            TArg3 arg3,
-            CancellationToken cancellationToken = default)
-            where TCommand : IAsyncResultCommand<TArg1, TArg2, TArg3, TResult>
-            where TResult : ICommandResult
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Log<TCommand>("Async ResultCommand");
-            return Get<TCommand>().ExecuteAsync(arg1, arg2, arg3, cancellationToken);
         }
 
         private TCommand Get<TCommand>()
