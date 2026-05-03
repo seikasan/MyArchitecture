@@ -85,7 +85,7 @@ namespace MyArchitecture.Integration
         private void AutoRegisterSceneViews(
             ArchitectureRegistrationContext context)
         {
-            var behaviours = Object.FindObjectsByType<MonoBehaviour>(
+            var behaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
