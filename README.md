@@ -243,10 +243,13 @@ Presenter には Model 本体ではなく、自動生成された読み取り専
 
 これにより、Presenter から Model を直接書き換える経路を遮断します。
 
-状態を変更したい場合は Command を使います。
-
 ```csharp
-this.SendCommand<AdvanceScenarioCommand>();
+private readonly IReadOnlyBoardModel _model;
+
+public BoardPresenter(IReadOnlyBoardModel model)
+{
+    _model = model;
+}
 ```
 
 状態を読むだけなら ReadOnlyModel または Query を使います。
