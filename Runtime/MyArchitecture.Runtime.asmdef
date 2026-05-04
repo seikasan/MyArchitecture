@@ -5,8 +5,7 @@
     "UniTask",
     "VContainer",
     "MessagePipe",
-    "MessagePipe.VContainer",
-    "PrimeTween.Runtime"
+    "MessagePipe.VContainer"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

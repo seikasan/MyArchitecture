@@ -1,0 +1,25 @@
+{
+  "name": "MyArchitecture.Integration.PrimeTween",
+  "rootNamespace": "MyArchitecture.Integration",
+  "references": [
+    "MyArchitecture.Runtime",
+    "PrimeTween.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "MYARCHITECTURE_PRIME_TWEEN"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.kyrylokuzyk.primetween",
+      "expression": "",
+      "define": "MYARCHITECTURE_PRIME_TWEEN"
+    }
+  ],
+  "noEngineReferences": false
+}

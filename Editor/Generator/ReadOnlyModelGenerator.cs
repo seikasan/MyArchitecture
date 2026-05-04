@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace MyArchitecture.Editor
 {
-    [InitializeOnLoad]
     internal static class ReadOnlyModelGenerator
     {
         private const string ReactivePropertyFullName = "R3.ReactiveProperty`1";
@@ -24,13 +23,7 @@ namespace MyArchitecture.Editor
         private const string FrameworkRootPath =
             "Packages/com.seikasan.myarchitecture/";
 
-        static ReadOnlyModelGenerator()
-        {
-            EditorApplication.delayCall += GenerateWhenReady;
-        }
-
-        [MenuItem("Tools/MyArchitecture/Generate/ReadOnly Models")]
-        public static void Generate()
+        public static bool Generate()
         {
             bool applicationChanged = Generate(
                 ApplicationOutputPath,
@@ -39,9 +32,7 @@ namespace MyArchitecture.Editor
                 PackageOutputPath,
                 IsFrameworkOwnedPath);
 
-            Debug.Log(applicationChanged || packageChanged ?
-                "ReadOnlyModel generated." :
-                "ReadOnlyModel is already up to date.");
+            return applicationChanged || packageChanged;
         }
 
         private static bool Generate(
@@ -85,17 +76,6 @@ namespace MyArchitecture.Editor
             }
 
             return WriteIfChanged(outputPath, builder.ToString());
-        }
-
-        private static void GenerateWhenReady()
-        {
-            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
-            {
-                EditorApplication.delayCall += GenerateWhenReady;
-                return;
-            }
-
-            Generate();
         }
 
         private static bool IsGeneratableModel(Type type)

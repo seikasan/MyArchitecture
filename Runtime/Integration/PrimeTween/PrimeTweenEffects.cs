@@ -1,4 +1,4 @@
-//#if PRIME_TWEEN || MYARCHITECTURE_PRIME_TWEEN
+#if PRIME_TWEEN || MYARCHITECTURE_PRIME_TWEEN
 using System;
 using MyArchitecture.Core;
 using PrimeTween;
@@ -974,4 +974,4 @@ namespace MyArchitecture.Integration
         }
     }
 }
-//#endif
+#endif

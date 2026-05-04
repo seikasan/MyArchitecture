@@ -8,7 +8,6 @@ using UnityEditor;
 
 namespace MyArchitecture.Editor
 {
-    [InitializeOnLoad]
     internal static class ArchitectureAutoRegistrationGenerator
     {
         private const string ApplicationOutputPath =
@@ -44,13 +43,7 @@ namespace MyArchitecture.Editor
             typeof(IAsyncQuery<,>)
         };
 
-        static ArchitectureAutoRegistrationGenerator()
-        {
-            EditorApplication.delayCall += GenerateWhenReady;
-        }
-
-        [MenuItem("Tools/MyArchitecture/Generate/Auto Registration")]
-        public static void Generate()
+        public static bool Generate()
         {
             bool applicationChanged = Generate(
                 ApplicationOutputPath,
@@ -64,9 +57,7 @@ namespace MyArchitecture.Editor
                 IsFrameworkRuntimeConcreteClass,
                 IsFrameworkRuntimeConcreteType);
 
-            UnityEngine.Debug.Log(applicationChanged || packageChanged ?
-                "Architecture auto registration generated." :
-                "Architecture auto registration is already up to date.");
+            return applicationChanged || packageChanged;
         }
 
         private static bool Generate(
@@ -122,17 +113,6 @@ namespace MyArchitecture.Editor
                 entityViewRegistrations);
 
             return WriteIfChanged(outputPath, source);
-        }
-
-        private static void GenerateWhenReady()
-        {
-            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
-            {
-                EditorApplication.delayCall += GenerateWhenReady;
-                return;
-            }
-
-            Generate();
         }
 
         private static void AddRegistrations(
