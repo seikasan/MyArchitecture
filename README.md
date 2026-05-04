@@ -9,6 +9,12 @@ QFramework の層構造や Command / Query の考え方を参考にしつつ、U
 現在は開発途中です。
 API、命名、ディレクトリ構成は変更する可能性があります。
 
+## 実装者向けの使い方
+
+MyArchitecture を使って実装するときに、普段呼び出すメソッドを次の文書にまとめています。
+
+[実装者向けの使い方を見る](Documentation~/usage.md)
+
 ## 作った背景
 
 MyArchitecture は、QFramework や VContainer を使ったときに感じた課題を、自分なりに解決するために作ったものです。
