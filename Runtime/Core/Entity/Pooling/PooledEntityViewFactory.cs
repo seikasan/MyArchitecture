@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Pool;
 using VContainer;
 
 namespace MyArchitecture.Core
@@ -29,13 +30,75 @@ namespace MyArchitecture.Core
             public override int GetHashCode() => PrefabInstanceId;
         }
 
-        private readonly Dictionary<PoolKey, Stack<TView>> _inactiveViewsByKey = new();
+        private enum PoolCreateMode
+        {
+            PositionAndRotation,
+            Parent
+        }
+
+        private readonly struct PoolCreateContext
+        {
+            private PoolCreateContext(
+                PoolKey poolKey,
+                PoolCreateMode mode,
+                Vector3 position,
+                Quaternion rotation,
+                Transform parent,
+                bool worldPositionStays)
+            {
+                PoolKey = poolKey;
+                Mode = mode;
+                Position = position;
+                Rotation = rotation;
+                Parent = parent;
+                WorldPositionStays = worldPositionStays;
+            }
+
+            public PoolKey PoolKey { get; }
+            public PoolCreateMode Mode { get; }
+            public Vector3 Position { get; }
+            public Quaternion Rotation { get; }
+            public Transform Parent { get; }
+            public bool WorldPositionStays { get; }
+
+            public static PoolCreateContext ForPositionAndRotation(
+                PoolKey poolKey,
+                Vector3 position,
+                Quaternion rotation,
+                Transform parent)
+                => new(
+                    poolKey,
+                    PoolCreateMode.PositionAndRotation,
+                    position,
+                    rotation,
+                    parent,
+                    false);
+
+            public static PoolCreateContext ForParent(
+                PoolKey poolKey,
+                Transform parent,
+                bool worldPositionStays)
+                => new(
+                    poolKey,
+                    PoolCreateMode.Parent,
+                    default,
+                    default,
+                    parent,
+                    worldPositionStays);
+        }
+
+        private const int PoolDefaultCapacity = 10;
+
+        private readonly Dictionary<PoolKey, ObjectPool<TView>> _poolsByKey = new();
         private readonly Dictionary<PoolKey, HashSet<TView>> _inactiveViewSetsByKey = new();
         private readonly Dictionary<TView, PoolKey> _poolKeyByCreatedView = new();
         private readonly HashSet<TView> _createdViews = new();
 
         private int _defaultMaxInactiveCount = 128;
         private readonly Dictionary<PoolKey, int> _maxInactiveCountByKey = new();
+        private bool _hasCreateContext;
+        private bool _lastGetCreated;
+        private PoolCreateContext _createContext;
 
         public int DefaultMaxInactiveCount
         {
@@ -59,6 +122,11 @@ namespace MyArchitecture.Core
 
         public void Dispose()
         {
+            foreach (var pool in _poolsByKey.Values)
+            {
+                pool.Dispose();
+            }
+
             var views = _createdViews.ToArray();
 
             foreach (var view in views)
@@ -66,7 +134,7 @@ namespace MyArchitecture.Core
                 DestroyCreatedViewSilently(view);
             }
 
-            _inactiveViewsByKey.Clear();
+            _poolsByKey.Clear();
             _inactiveViewSetsByKey.Clear();
             _poolKeyByCreatedView.Clear();
             _createdViews.Clear();
@@ -86,20 +154,24 @@ namespace MyArchitecture.Core
 
             var poolKey = new PoolKey(prefab);
 
-            var view = TryTakeInactive(poolKey);
-            bool created = view == null;
-
-            if (created)
-            {
-                view = UnityEngine.Object.Instantiate(
-                    prefab,
+            var view = GetFromPool(
+                prefab,
+                poolKey,
+                PoolCreateContext.ForPositionAndRotation(
+                    poolKey,
                     position,
                     rotation,
-                    parent);
-            }
-            else
+                    parent),
+                out bool created);
+
+            try
             {
                 ApplyTransform(view, prefab, position, rotation, parent);
+            }
+            catch
+            {
+                CleanupFailedCreate(view, poolKey, created);
+                throw;
             }
 
             return Activate(view, poolKey, id, register, created);
@@ -117,19 +189,23 @@ namespace MyArchitecture.Core
 
             var poolKey = new PoolKey(prefab);
 
-            var view = TryTakeInactive(poolKey);
-            bool created = view == null;
-
-            if (created)
-            {
-                view = UnityEngine.Object.Instantiate(
-                    prefab,
+            var view = GetFromPool(
+                prefab,
+                poolKey,
+                PoolCreateContext.ForParent(
+                    poolKey,
                     parent,
-                    worldPositionStays);
-            }
-            else
+                    worldPositionStays),
+                out bool created);
+
+            try
             {
                 ApplyTransform(view, prefab, parent, worldPositionStays);
+            }
+            catch
+            {
+                CleanupFailedCreate(view, poolKey, created);
+                throw;
             }
 
             return Activate(view, poolKey, id, register, created);
@@ -170,8 +246,7 @@ namespace MyArchitecture.Core
 
             view.gameObject.SetActive(false);
 
-            GetInactiveViews(poolKey).Push(view);
-            inactiveViewSet.Add(view);
+            GetPool(poolKey).Release(view);
         }
 
         public void Release(TEntityId id)
@@ -183,18 +258,11 @@ namespace MyArchitecture.Core
 
         public void ClearInactive()
         {
-            foreach (var pair in _inactiveViewsByKey)
+            foreach (var pool in _poolsByKey.Values)
             {
-                Stack<TView> inactiveViews = pair.Value;
-
-                while (inactiveViews.Count > 0)
-                {
-                    TView view = inactiveViews.Pop();
-                    DestroyCreatedView(view);
-                }
+                pool.Clear();
             }
 
-            _inactiveViewsByKey.Clear();
             _inactiveViewSetsByKey.Clear();
         }
 
@@ -223,24 +291,44 @@ namespace MyArchitecture.Core
             }
 
             var poolKey = new PoolKey(prefab);
-            var inactiveViews = GetInactiveViews(poolKey);
             var inactiveViewSet = GetInactiveViewSet(poolKey);
-            var maxInactiveCount = GetMaxInactiveCount(poolKey);
+            int targetInactiveCount = Math.Min(count, GetMaxInactiveCount(poolKey));
 
-            while (inactiveViewSet.Count < maxInactiveCount &&
-                   inactiveViewSet.Count < count)
+            if (inactiveViewSet.Count >= targetInactiveCount)
             {
-                var view = UnityEngine.Object.Instantiate(prefab, parent);
-                Resolver.Inject(view);
+                return;
+            }
 
-                view.UnbindEntity();
-                view.gameObject.SetActive(false);
+            var pool = GetPool(poolKey, prefab);
+            var views = new List<TView>(targetInactiveCount);
 
-                _createdViews.Add(view);
-                _poolKeyByCreatedView.Add(view, poolKey);
+            try
+            {
+                while (views.Count < targetInactiveCount)
+                {
+                    var view = GetFromPool(
+                        prefab,
+                        poolKey,
+                        PoolCreateContext.ForParent(
+                            poolKey,
+                            parent,
+                            false),
+                        out _);
 
-                inactiveViews.Push(view);
-                inactiveViewSet.Add(view);
+                    view.UnbindEntity();
+                    view.gameObject.SetActive(false);
+
+                    views.Add(view);
+                }
+            }
+            finally
+            {
+                foreach (var view in views)
+                {
+                    if (view == null) continue;
+
+                    pool.Release(view);
+                }
             }
         }
 
@@ -256,13 +344,6 @@ namespace MyArchitecture.Core
         {
             try
             {
-                if (created)
-                {
-                    _createdViews.Add(view);
-                    _poolKeyByCreatedView.Add(view, poolKey);
-                    Resolver.Inject(view);
-                }
-
                 BindOrRegister(view, id, register);
 
                 NotifyRentedFromPool(view, id);
@@ -278,33 +359,65 @@ namespace MyArchitecture.Core
             }
         }
 
-        private TView TryTakeInactive(PoolKey poolKey)
+        private TView GetFromPool(
+            TView prefab,
+            PoolKey poolKey,
+            PoolCreateContext createContext,
+            out bool created)
         {
-            if (!_inactiveViewsByKey.TryGetValue(poolKey, out var inactiveViews)) return null;
+            var pool = GetPool(poolKey, prefab);
 
-            var inactiveViewSet = GetInactiveViewSet(poolKey);
-
-            while (inactiveViews.Count > 0)
+            while (true)
             {
-                var view = inactiveViews.Pop();
-                inactiveViewSet.Remove(view);
+                _hasCreateContext = true;
+                _createContext = createContext;
+                _lastGetCreated = false;
 
-                if (view != null) return view;
+                try
+                {
+                    var view = pool.Get();
+                    created = _lastGetCreated;
 
-                _createdViews.Remove(view);
-                _poolKeyByCreatedView.Remove(view);
+                    if (view != null)
+                    {
+                        return view;
+                    }
+
+                    RemoveCreatedViewMetadata(view);
+                }
+                finally
+                {
+                    _hasCreateContext = false;
+                    _lastGetCreated = false;
+                }
             }
-
-            return null;
         }
 
-        private Stack<TView> GetInactiveViews(PoolKey poolKey)
+        private ObjectPool<TView> GetPool(PoolKey poolKey)
         {
-            if (_inactiveViewsByKey.TryGetValue(poolKey, out var stack)) return stack;
+            if (_poolsByKey.TryGetValue(poolKey, out var pool)) return pool;
 
-            stack = new Stack<TView>();
-            _inactiveViewsByKey.Add(poolKey, stack);
-            return stack;
+            throw new InvalidOperationException(
+                $"Pool is not found for view: {typeof(TView).Name}");
+        }
+
+        private ObjectPool<TView> GetPool(
+            PoolKey poolKey,
+            TView prefab)
+        {
+            if (_poolsByKey.TryGetValue(poolKey, out var pool)) return pool;
+
+            pool = new ObjectPool<TView>(
+                () => CreatePooledView(prefab, poolKey),
+                view => RemoveFromInactiveSet(poolKey, view),
+                view => AddToInactiveSet(poolKey, view),
+                DestroyCreatedView,
+                true,
+                PoolDefaultCapacity,
+                int.MaxValue);
+
+            _poolsByKey.Add(poolKey, pool);
+            return pool;
         }
 
         private HashSet<TView> GetInactiveViewSet(PoolKey poolKey)
@@ -314,6 +427,81 @@ namespace MyArchitecture.Core
             set = new HashSet<TView>();
             _inactiveViewSetsByKey.Add(poolKey, set);
             return set;
+        }
+
+        private TView CreatePooledView(
+            TView prefab,
+            PoolKey poolKey)
+        {
+            TView view = null;
+
+            try
+            {
+                view = InstantiatePooledView(prefab, poolKey);
+
+                Resolver.Inject(view);
+
+                _createdViews.Add(view);
+                _poolKeyByCreatedView.Add(view, poolKey);
+                _lastGetCreated = true;
+
+                return view;
+            }
+            catch
+            {
+                if (view != null)
+                {
+                    UnityEngine.Object.Destroy(view.gameObject);
+                }
+
+                throw;
+            }
+        }
+
+        private TView InstantiatePooledView(
+            TView prefab,
+            PoolKey poolKey)
+        {
+            if (!_hasCreateContext ||
+                !_createContext.PoolKey.Equals(poolKey))
+            {
+                return UnityEngine.Object.Instantiate(prefab);
+            }
+
+            return _createContext.Mode switch
+            {
+                PoolCreateMode.PositionAndRotation => UnityEngine.Object.Instantiate(
+                    prefab,
+                    _createContext.Position,
+                    _createContext.Rotation,
+                    _createContext.Parent),
+                PoolCreateMode.Parent => UnityEngine.Object.Instantiate(
+                    prefab,
+                    _createContext.Parent,
+                    _createContext.WorldPositionStays),
+                _ => UnityEngine.Object.Instantiate(prefab)
+            };
+        }
+
+        private void AddToInactiveSet(
+            PoolKey poolKey,
+            TView view)
+        {
+            if (ReferenceEquals(view, null)) return;
+
+            GetInactiveViewSet(poolKey).Add(view);
+        }
+
+        private void RemoveFromInactiveSet(
+            PoolKey poolKey,
+            TView view)
+        {
+            if (ReferenceEquals(view, null)) return;
+
+            if (_inactiveViewSetsByKey.TryGetValue(poolKey, out var set))
+            {
+                set.Remove(view);
+            }
         }
 
         private void CleanupFailedCreate(
@@ -330,20 +518,13 @@ namespace MyArchitecture.Core
 
             if (created)
             {
-                _createdViews.Remove(view);
-                _poolKeyByCreatedView.Remove(view);
-                UnityEngine.Object.Destroy(view.gameObject);
+                DestroyCreatedView(view);
                 return;
             }
 
             view.gameObject.SetActive(false);
 
-            var inactiveViewSet = GetInactiveViewSet(poolKey);
-
-            if (inactiveViewSet.Add(view))
-            {
-                GetInactiveViews(poolKey).Push(view);
-            }
+            GetPool(poolKey).Release(view);
         }
 
         private void ThrowIfPrefabIsNull(TView prefab)
@@ -395,24 +576,20 @@ namespace MyArchitecture.Core
 
         private void DestroyCreatedView(TView view)
         {
-            if (view == null) return;
+            if (ReferenceEquals(view, null)) return;
 
-            if (!Registry.Unregister(view))
+            if (view != null &&
+                !Registry.Unregister(view))
             {
                 view.UnbindEntity();
             }
 
-            _createdViews.Remove(view);
+            RemoveCreatedViewMetadata(view);
 
-            if (_poolKeyByCreatedView.Remove(view, out var poolKey))
+            if (view != null)
             {
-                if (_inactiveViewSetsByKey.TryGetValue(poolKey, out var inactiveSet))
-                {
-                    inactiveSet.Remove(view);
-                }
+                UnityEngine.Object.Destroy(view.gameObject);
             }
-
-            UnityEngine.Object.Destroy(view.gameObject);
         }
 
         private static void NotifyRentedFromPool(TView view, TEntityId id)
@@ -433,14 +610,33 @@ namespace MyArchitecture.Core
 
         private void DestroyCreatedViewSilently(TView view)
         {
-            if (view == null) return;
+            if (ReferenceEquals(view, null)) return;
 
-            if (!Registry.UnregisterSilently(view))
+            if (view != null &&
+                !Registry.UnregisterSilently(view))
             {
                 view.UnbindEntity();
             }
 
-            UnityEngine.Object.Destroy(view.gameObject);
+            RemoveCreatedViewMetadata(view);
+
+            if (view != null)
+            {
+                UnityEngine.Object.Destroy(view.gameObject);
+            }
+        }
+
+        private void RemoveCreatedViewMetadata(TView view)
+        {
+            if (ReferenceEquals(view, null)) return;
+
+            _createdViews.Remove(view);
+
+            if (_poolKeyByCreatedView.Remove(view, out var poolKey) &&
+                _inactiveViewSetsByKey.TryGetValue(poolKey, out var inactiveSet))
+            {
+                inactiveSet.Remove(view);
+            }
         }
     }
 }
