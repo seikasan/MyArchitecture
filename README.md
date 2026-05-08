@@ -110,7 +110,7 @@ this.SendCommand<MoveItemCommand, (int from, int to)>((from, to));
 成功 / 失敗だけ返したい場合は TryCommand を使います。
 
 ```csharp
-var success = this.TrySendCommand<UseItemCommand, int>(itemId);
+bool success = this.TrySendCommand<UseItemCommand, int>(itemId);
 ```
 
 ### ResultCommand
@@ -118,10 +118,10 @@ var success = this.TrySendCommand<UseItemCommand, int>(itemId);
 結果を返したい場合は ResultCommand を使います。
 
 ```csharp
-var result = this.SendResultCommand<
-    UseItemCommand,
-    int,
-    UseItemResult>(itemId);
+UseItemResult result = this.SendResultCommand<
+              UseItemCommand,
+              int,
+              UseItemResult>(itemId);
 ```
 
 ### Async 系 Command
@@ -130,7 +130,7 @@ var result = this.SendResultCommand<
 
 ```csharp
 await this.SendCommandAsync<LoadScenarioCommand>();
-var success = await this.TrySendCommandAsync<UseItemCommand, int>(itemId);
+bool success = await this.TrySendCommandAsync<UseItemCommand, int>(itemId);
 ```
 
 ## Query
@@ -139,22 +139,22 @@ var success = await this.TrySendCommandAsync<UseItemCommand, int>(itemId);
 Query は状態を変更しません。
 
 ```csharp
-var line = this.SendQuery<GetCurrentLineQuery, ScenarioLine>();
+ScenarioLine line = this.SendQuery<GetCurrentLineQuery, ScenarioLine>();
 ```
 
 引数がある場合も Command と同じように扱います。
 
 ```csharp
-var item = this.SendQuery<GetItemQuery, int, ItemData>(itemId);
+ItemData item = this.SendQuery<GetItemQuery, int, ItemData>(itemId);
 ```
 
 複数の値を渡す場合は、タプルまたは構造体を使います。
 
 ```csharp
-var distance = this.SendQuery<
-    GetDistanceQuery,
-    (int fromId, int toId),
-    float>((fromId, toId));
+float distance = this.SendQuery<
+      GetDistanceQuery,
+      (int fromId, int toId),
+      float>((fromId, toId));
 ```
 
 ## ViewSignal / Observable(ReactiveProperty) の購読
